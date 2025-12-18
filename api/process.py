@@ -3,48 +3,43 @@ import pandas as pd
 import numpy as np
 import os
 
-# Inicializa a aplicação Flask
 app = Flask(__name__)
-
-def calcular_reposicao():
-    try:
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        path_nov = os.path.join(base_dir, 'Curva-abc-NOV.xlsx')
-        path_17_dias = os.path.join(base_dir, 'abc-17-dias.xlsx')
-
-        df_nov = pd.read_excel(path_nov)
-        df_17_dias = pd.read_excel(path_17_dias)
-
-        df_17_dias['estoque_atual'] = pd.to_numeric(df_17_dias['estoque_atual'], errors='coerce').fillna(0)
-        df_17_dias = df_17_dias[df_17_dias['estoque_atual'] >= 0].copy()
-
-        df_17_dias['qtd_venda'] = pd.to_numeric(df_17_dias['qtd_venda'], errors='coerce').fillna(0)
-        df_17_dias['VDM'] = df_17_dias['qtd_venda'] / 17
-        df_17_dias['VDM'] = df_17_dias['VDM'].fillna(0)
-
-        periodo_cobertura = 12
-        df_17_dias['Estoque_Alvo'] = df_17_dias['VDM'] * periodo_cobertura
-        df_17_dias['Estoque_Alvo'] = df_17_dias['Estoque_Alvo'].apply(lambda x: np.ceil(x))
-
-        df_17_dias['Quantidade_a_Comprar'] = df_17_dias['Estoque_Alvo'] - df_17_dias['estoque_atual']
-        df_17_dias['Quantidade_a_Comprar'] = df_17_dias['Quantidade_a_Comprar'].clip(lower=0)
-        df_17_dias['Quantidade_a_Comprar'] = df_17_dias['Quantidade_a_Comprar'].astype(int)
-
-        lista_de_compras = df_17_dias[df_17_dias['Quantidade_a_Comprar'] > 0]
-        colunas_finais = ['Código', 'Produto', 'Quantidade_a_Comprar']
-        resultado = lista_de_compras[colunas_finais].sort_values(by='Quantidade_a_Comprar', ascending=False).to_dict(orient='records')
-        
-        return resultado
-
-    except Exception as e:
-        # Este bloco agora só serve como uma segurança final, mas o erro principal foi resolvido.
-        return {"error": "Ocorreu uma falha inesperada durante o cálculo.", "details": str(e)}
-
 
 @app.route('/api/process', methods=['GET'])
 def process_handler():
-    resultado_final = calcular_reposicao()
-    if 'error' in resultado_final:
-        return jsonify(resultado_final), 500
-    
-    return jsonify(resultado_final)
+    try:
+        # ETAPA 0: CARREGAR APENAS O ARQUIVO ESSENCIAL
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        path_recente = os.path.join(base_dir, 'abc-17-dias.xlsx')
+        df = pd.read_excel(path_recente)
+
+        # ETAPA 1: LIMPEZA ROBUSTA DOS DADOS
+        df['estoque_atual'] = pd.to_numeric(df['estoque_atual'], errors='coerce').fillna(0)
+        df['qtd_venda'] = pd.to_numeric(df['qtd_venda'], errors='coerce').fillna(0)
+        df = df[df['estoque_atual'] >= 0].copy()
+
+        # ETAPA 2: CÁLCULO DA VELOCIDADE DE VENDAS (VDM)
+        df['VDM'] = df['qtd_venda'] / 17
+        df['VDM'] = df['VDM'].fillna(0)
+
+        # ETAPA 3: CÁLCULO DO ESTOQUE ALVO
+        periodo_cobertura = 12  # 7 dias (ciclo) + 5 dias (segurança)
+        df['Estoque_Alvo'] = df['VDM'] * periodo_cobertura
+        df['Estoque_Alvo'] = df['Estoque_Alvo'].apply(np.ceil)
+
+        # ETAPA 4: CÁLCULO DA NECESSIDADE DE COMPRA
+        df['Quantidade_a_Comprar'] = df['Estoque_Alvo'] - df['estoque_atual']
+        df['Quantidade_a_Comprar'] = df['Quantidade_a_Comprar'].clip(lower=0).astype(int)
+
+        # GERAÇÃO DA SAÍDA
+        lista_de_compras = df[df['Quantidade_a_Comprar'] > 0]
+        colunas_finais = ['Código', 'Produto', 'Quantidade_a_Comprar']
+        resultado = lista_de_compras[colunas_finais].sort_values(by='Quantidade_a_Comprar', ascending=False).to_dict(orient='records')
+        
+        return jsonify(resultado)
+
+    except FileNotFoundError:
+        return jsonify({"error": "Arquivo 'abc-17-dias.xlsx' não encontrado na pasta 'api'."}), 404
+    except Exception as e:
+        # Se um erro ainda ocorrer, ele será capturado e retornado de forma estruturada.
+        return jsonify({"error": "Falha crítica no processamento dos dados.", "details": str(e)}), 500
