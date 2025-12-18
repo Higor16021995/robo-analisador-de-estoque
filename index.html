@@ -7,13 +7,10 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f4f6f8; color: #333; text-align: center; padding: 20px 0; }
         .container { background: #fff; max-width: 900px; margin: auto; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         button { font-size: 18px; padding: 12px 25px; cursor: pointer; background: #007aff; color: white; border: none; border-radius: 6px; margin-bottom: 20px; transition: background-color 0.2s; }
-        button:hover { background-color: #0056b3; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
         th { background-color: #f8f9fa; font-weight: 600; }
-        tr:nth-child(even) { background-color: #f8f9fa; }
-        #resultado p { font-size: 16px; text-align: left; white-space: pre-wrap; word-wrap: break-word; }
-        .error-box { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; padding: 15px; border-radius: 4px; text-align: left; }
+        .error-box { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; padding: 15px; border-radius: 4px; text-align: left; white-space: pre-wrap; word-wrap: break-word; }
     </style>
 </head>
 <body>
@@ -21,50 +18,47 @@
         <h1>Calculadora de Reposição de Estoque</h1>
         <p>Clique no botão para gerar a lista de compras para a próxima semana.</p>
         <button onclick="gerarListaDeCompras()">Gerar Lista de Compras</button>
-        <div id="resultado">
-            <p>A lista de compras aparecerá aqui...</p>
-        </div>
+        <div id="resultado"><p>A lista de compras aparecerá aqui...</p></div>
     </div>
 
     <script>
         async function gerarListaDeCompras() {
             const resultadoDiv = document.getElementById('resultado');
-            resultadoDiv.innerHTML = '<p>Analisando dados e calculando quantidades... Por favor, aguarde.</p>';
+            resultadoDiv.innerHTML = '<p>Analisando dados... Por favor, aguarde.</p>';
             
             try {
                 const response = await fetch('/api/process');
                 
-                // --- LÓGICA DE DIAGNÓSTICO MELHORADA ---
-                if (!response.ok) {
-                    // Tenta ler o corpo da resposta de erro para obter detalhes
-                    const errorData = await response.json();
-                    let errorMessage = `<div class="error-box"><strong>Erro no Servidor</strong><br>`;
-                    if (errorData.details) {
-                        errorMessage += `<strong>Mensagem:</strong> ${errorData.details.error_message}<br><br>`;
-                        errorMessage += `<strong>Rastreamento (Traceback):</strong><br><pre>${errorData.details.traceback}</pre></div>`;
+                // Tenta clonar a resposta para poder lê-la de duas maneiras diferentes
+                const clonedResponse = response.clone();
+
+                try {
+                    // Tenta ler como JSON (o caminho feliz)
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        if (data.length === 0) {
+                            resultadoDiv.innerHTML = '<p>Nenhum item precisa de reposição no momento.</p>';
+                        } else {
+                            let tableHTML = '<h2>Lista de Compras para a Próxima Semana</h2><table><thead><tr><th>Código</th><th>Produto</th><th>Quantidade a Comprar</th></tr></thead><tbody>';
+                            data.forEach(item => {
+                                tableHTML += `<tr><td>${item['Código']}</td><td>${item['Produto']}</td><td>${item['Quantidade a Comprar']}</td></tr>`;
+                            });
+                            tableHTML += '</tbody></table>';
+                            resultadoDiv.innerHTML = tableHTML;
+                        }
                     } else {
-                        errorMessage += `Ocorreu um erro, mas não foi possível obter detalhes. Status: ${response.statusText}</div>`;
+                        // O servidor respondeu com um erro, mas enviou um JSON
+                        resultadoDiv.innerHTML = `<div class="error-box"><strong>Erro no Servidor (JSON)</strong><br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
                     }
-                    resultadoDiv.innerHTML = errorMessage;
-                    return;
+                } catch (jsonError) {
+                    // --- DIAGNÓSTICO DE ÚLTIMA INSTÂNCIA ---
+                    // Se falhou ao ler como JSON, leia como texto bruto.
+                    const rawText = await clonedResponse.text();
+                    resultadoDiv.innerHTML = `<div class="error-box"><strong>Resposta Inesperada do Servidor (Não-JSON)</strong><br>Status: ${response.status} - ${response.statusText}<br><br><strong>Conteúdo da Resposta:</strong><br><pre>${rawText}</pre></div>`;
                 }
-                
-                const data = await response.json();
-
-                if (data.length === 0) {
-                    resultadoDiv.innerHTML = '<p>Nenhum item precisa de reposição no momento.</p>';
-                    return;
-                }
-
-                let tableHTML = '<h2>Lista de Compras para a Próxima Semana</h2><table><thead><tr><th>Código</th><th>Produto</th><th>Quantidade a Comprar</th></tr></thead><tbody>';
-                data.forEach(item => {
-                    tableHTML += `<tr><td>${item['Código']}</td><td>${item['Produto']}</td><td>${item['Quantidade a Comprar']}</td></tr>`;
-                });
-                tableHTML += '</tbody></table>';
-                resultadoDiv.innerHTML = tableHTML;
-                
-            } catch (error) {
-                resultadoDiv.innerHTML = `<div class="error-box"><strong>Erro de Conexão!</strong><br>Não foi possível comunicar com o servidor. Verifique sua conexão ou o status do serviço.<br>Detalhes: ${error.message}</div>`;
+            } catch (networkError) {
+                resultadoDiv.innerHTML = `<div class="error-box"><strong>Erro de Rede!</strong><br>Não foi possível comunicar com o servidor.<br>Detalhes: ${networkError.message}</div>`;
             }
         }
     </script>
