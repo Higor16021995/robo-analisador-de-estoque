@@ -4,20 +4,27 @@
     <meta charset="UTF-8">
     <title>Analisador de Estoque Mágico</title>
     <style>
-        body { font-family: sans-serif; background: #f0f0f0; text-align: center; padding-top: 50px; }
-        button { font-size: 20px; padding: 15px 30px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
-        pre { background: #fff; text-align: left; display: inline-block; padding: 20px; border: 1px solid #ccc; white-space: pre-wrap; word-wrap: break-word; }
+        body { font-family: sans-serif; background: #f0f0f0; text-align: center; padding: 20px 0; }
+        .container { background: #fff; max-width: 900px; margin: auto; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        button { font-size: 20px; padding: 15px 30px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; margin-bottom: 20px;}
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
-    <h1>Robô Analisador de Estoque</h1>
-    <p>Clique no botão para pedir ao robô para fazer os cálculos mágicos!</p>
-    <button onclick="chamarORobo()">Analisar Agora!</button>
-    <div id="resultado">
-        <p>O resultado aparecerá aqui...</p>
+    <div class="container">
+        <h1>Robô Analisador de Estoque</h1>
+        <p>Clique no botão para pedir ao robô para fazer os cálculos mágicos!</p>
+        <button onclick="chamarORobo()">Analisar Agora!</button>
+        <div id="resultado">
+            <p>O resultado aparecerá aqui...</p>
+        </div>
     </div>
 
     <script>
+        // Esta função agora é muito mais inteligente!
         async function chamarORobo() {
             const resultadoDiv = document.getElementById('resultado');
             resultadoDiv.innerHTML = '<p>O robô está pensando... Aguarde!</p>';
@@ -28,7 +35,45 @@
                     throw new Error(`O robô respondeu com um erro: ${response.statusText}`);
                 }
                 const data = await response.json();
-                resultadoDiv.innerHTML = '<h2>O Robô Terminou!</h2><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+
+                // --- NOVA LÓGICA PARA CONSTRUIR A TABELA ---
+
+                if (data.length === 0) {
+                    resultadoDiv.innerHTML = '<p>O robô não encontrou dados para analisar.</p>';
+                    return;
+                }
+
+                // 1. Pega os nomes das colunas do primeiro item (ex: "Produto", "Mês", etc.)
+                const headers = Object.keys(data[0]);
+
+                // 2. Cria o cabeçalho da tabela
+                let tableHTML = '<table><thead><tr>';
+                headers.forEach(header => {
+                    tableHTML += `<th>${header}</th>`;
+                });
+                tableHTML += '</tr></thead><tbody>';
+
+                // 3. Cria uma linha (<tr>) para cada item de dados
+                data.forEach(item => {
+                    tableHTML += '<tr>';
+                    // Cria uma célula (<td>) para cada valor, na ordem correta
+                    headers.forEach(header => {
+                        // Formata a data para ficar mais bonita
+                        if (header === 'Mês') {
+                            const dataFormatada = new Date(item[header]).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                            tableHTML += `<td>${dataFormatada}</td>`;
+                        } else {
+                            tableHTML += `<td>${item[header]}</td>`;
+                        }
+                    });
+                    tableHTML += '</tr>';
+                });
+
+                tableHTML += '</tbody></table>';
+
+                // 4. Exibe a tabela completa!
+                resultadoDiv.innerHTML = '<h2>O Robô Terminou!</h2>' + tableHTML;
+                
             } catch (error) {
                 resultadoDiv.innerHTML = `<p style="color:red;"><strong>Erro!</strong> Não consegui falar com o robô. Detalhes: ${error.message}</p>`;
             }
