@@ -28,37 +28,26 @@
             
             try {
                 const response = await fetch('/api/process');
-                
-                // Tenta clonar a resposta para poder lê-la de duas maneiras diferentes
-                const clonedResponse = response.clone();
+                const data = await response.json();
 
-                try {
-                    // Tenta ler como JSON (o caminho feliz)
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        if (data.length === 0) {
-                            resultadoDiv.innerHTML = '<p>Nenhum item precisa de reposição no momento.</p>';
-                        } else {
-                            let tableHTML = '<h2>Lista de Compras para a Próxima Semana</h2><table><thead><tr><th>Código</th><th>Produto</th><th>Quantidade a Comprar</th></tr></thead><tbody>';
-                            data.forEach(item => {
-                                tableHTML += `<tr><td>${item['Código']}</td><td>${item['Produto']}</td><td>${item['Quantidade a Comprar']}</td></tr>`;
-                            });
-                            tableHTML += '</tbody></table>';
-                            resultadoDiv.innerHTML = tableHTML;
-                        }
-                    } else {
-                        // O servidor respondeu com um erro, mas enviou um JSON
-                        resultadoDiv.innerHTML = `<div class="error-box"><strong>Erro no Servidor (JSON)</strong><br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
-                    }
-                } catch (jsonError) {
-                    // --- DIAGNÓSTICO DE ÚLTIMA INSTÂNCIA ---
-                    // Se falhou ao ler como JSON, leia como texto bruto.
-                    const rawText = await clonedResponse.text();
-                    resultadoDiv.innerHTML = `<div class="error-box"><strong>Resposta Inesperada do Servidor (Não-JSON)</strong><br>Status: ${response.status} - ${response.statusText}<br><br><strong>Conteúdo da Resposta:</strong><br><pre>${rawText}</pre></div>`;
+                if (!response.ok) {
+                    resultadoDiv.innerHTML = `<div class="error-box"><strong>Erro no Servidor</strong><br><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+                    return;
                 }
-            } catch (networkError) {
-                resultadoDiv.innerHTML = `<div class="error-box"><strong>Erro de Rede!</strong><br>Não foi possível comunicar com o servidor.<br>Detalhes: ${networkError.message}</div>`;
+
+                if (data.length === 0) {
+                    resultadoDiv.innerHTML = '<p>Nenhum item precisa de reposição no momento.</p>';
+                } else {
+                    let tableHTML = '<h2>Lista de Compras para a Próxima Semana</h2><table><thead><tr><th>Código</th><th>Produto</th><th>Quantidade a Comprar</th></tr></thead><tbody>';
+                    // --- CORREÇÃO FINAL: Usando os nomes de chaves padronizados e em minúsculas ---
+                    data.forEach(item => {
+                        tableHTML += `<tr><td>${item.codigo}</td><td>${item.produto}</td><td>${item.quantidade_a_comprar}</td></tr>`;
+                    });
+                    tableHTML += '</tbody></table>';
+                    resultadoDiv.innerHTML = tableHTML;
+                }
+            } catch (error) {
+                resultadoDiv.innerHTML = `<div class="error-box"><strong>Erro de Conexão ou Resposta Inválida.</strong><br>Detalhes: ${error.message}</div>`;
             }
         }
     </script>
