@@ -8,10 +8,11 @@ app = Flask(__name__)
 @app.route('/api/process', methods=['GET'])
 def process_handler():
     try:
-        # --- A CORREÇÃO FINAL ESTÁ AQUI ---
-        # O caminho agora aponta para o diretório correto no ambiente da Vercel.
-        # Em vez de procurar na pasta local, ele procura na pasta raiz do projeto.
-        path_recente = os.path.join(os.getcwd(), 'abc-17-dias.xlsx')
+        # --- A CORREÇÃO DEFINITIVA ---
+        # Este método encontra o diretório ONDE O SCRIPT ESTÁ SENDO EXECUTADO
+        # e procura os arquivos na mesma pasta. É a forma mais confiável.
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        path_recente = os.path.join(base_dir, 'abc-17-dias.xlsx')
 
         # Carrega o arquivo essencial
         df = pd.read_excel(path_recente)
@@ -38,8 +39,8 @@ def process_handler():
         return jsonify(resultado)
 
     except FileNotFoundError:
-        # Mensagem de erro aprimorada para o futuro
-        error_msg = f"Arquivo 'abc-17-dias.xlsx' não foi encontrado. O sistema procurou no caminho: {os.getcwd()}"
-        return jsonify({"error": "Configuração de Arquivo Incorreta.", "details": error_msg}), 404
+        # Mensagem de erro final para garantir que o problema seja identificado se algo mudar no futuro
+        error_msg = f"Arquivo 'abc-17-dias.xlsx' não foi encontrado na pasta 'api'. Verifique se o arquivo foi enviado corretamente para o GitHub junto com 'process.py'."
+        return jsonify({"error": "Arquivo de Dados Essencial Ausente.", "details": error_msg}), 404
     except Exception as e:
         return jsonify({"error": "Falha crítica no processamento dos dados.", "details": str(e)}), 500
