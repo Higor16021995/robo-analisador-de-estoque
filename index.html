@@ -2,80 +2,55 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Analisador de Estoque Mágico</title>
+    <title>Calculadora de Reposição de Estoque</title>
     <style>
-        body { font-family: sans-serif; background: #f0f0f0; text-align: center; padding: 20px 0; }
-        .container { background: #fff; max-width: 900px; margin: auto; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        button { font-size: 20px; padding: 15px 30px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; margin-bottom: 20px;}
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f4f6f8; color: #333; text-align: center; padding: 20px 0; }
+        .container { background: #fff; max-width: 900px; margin: auto; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        button { font-size: 18px; padding: 12px 25px; cursor: pointer; background: #007aff; color: white; border: none; border-radius: 6px; margin-bottom: 20px; transition: background-color 0.2s; }
+        button:hover { background-color: #0056b3; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #007bff; color: white; }
-        tr:nth-child(even) { background-color: #f2f2f2; }
+        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        #resultado p { font-size: 16px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Robô Analisador de Estoque</h1>
-        <p>Clique no botão para pedir ao robô para fazer os cálculos mágicos!</p>
-        <button onclick="chamarORobo()">Analisar Agora!</button>
+        <h1>Calculadora de Reposição de Estoque</h1>
+        <p>Clique no botão para gerar a lista de compras para a próxima semana.</p>
+        <button onclick="gerarListaDeCompras()">Gerar Lista de Compras</button>
         <div id="resultado">
-            <p>O resultado aparecerá aqui...</p>
+            <p>A lista de compras aparecerá aqui...</p>
         </div>
     </div>
 
     <script>
-        // Esta função agora é muito mais inteligente!
-        async function chamarORobo() {
+        async function gerarListaDeCompras() {
             const resultadoDiv = document.getElementById('resultado');
-            resultadoDiv.innerHTML = '<p>O robô está pensando... Aguarde!</p>';
+            resultadoDiv.innerHTML = '<p>Analisando dados e calculando quantidades... Por favor, aguarde.</p>';
             
             try {
                 const response = await fetch('/api/process');
                 if (!response.ok) {
-                    throw new Error(`O robô respondeu com um erro: ${response.statusText}`);
+                    throw new Error(`Ocorreu um erro no servidor: ${response.statusText}`);
                 }
                 const data = await response.json();
 
-                // --- NOVA LÓGICA PARA CONSTRUIR A TABELA ---
-
                 if (data.length === 0) {
-                    resultadoDiv.innerHTML = '<p>O robô não encontrou dados para analisar.</p>';
+                    resultadoDiv.innerHTML = '<p>Nenhum item precisa de reposição no momento.</p>';
                     return;
                 }
 
-                // 1. Pega os nomes das colunas do primeiro item (ex: "Produto", "Mês", etc.)
-                const headers = Object.keys(data[0]);
-
-                // 2. Cria o cabeçalho da tabela
-                let tableHTML = '<table><thead><tr>';
-                headers.forEach(header => {
-                    tableHTML += `<th>${header}</th>`;
-                });
-                tableHTML += '</tr></thead><tbody>';
-
-                // 3. Cria uma linha (<tr>) para cada item de dados
+                let tableHTML = '<h2>Lista de Compras para a Próxima Semana</h2><table><thead><tr><th>Código</th><th>Produto</th><th>Quantidade a Comprar</th></tr></thead><tbody>';
                 data.forEach(item => {
-                    tableHTML += '<tr>';
-                    // Cria uma célula (<td>) para cada valor, na ordem correta
-                    headers.forEach(header => {
-                        // Formata a data para ficar mais bonita
-                        if (header === 'Mês') {
-                            const dataFormatada = new Date(item[header]).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-                            tableHTML += `<td>${dataFormatada}</td>`;
-                        } else {
-                            tableHTML += `<td>${item[header]}</td>`;
-                        }
-                    });
-                    tableHTML += '</tr>';
+                    tableHTML += `<tr><td>${item['Código']}</td><td>${item['Produto']}</td><td>${item['Quantidade a Comprar']}</td></tr>`;
                 });
-
                 tableHTML += '</tbody></table>';
-
-                // 4. Exibe a tabela completa!
-                resultadoDiv.innerHTML = '<h2>O Robô Terminou!</h2>' + tableHTML;
+                resultadoDiv.innerHTML = tableHTML;
                 
             } catch (error) {
-                resultadoDiv.innerHTML = `<p style="color:red;"><strong>Erro!</strong> Não consegui falar com o robô. Detalhes: ${error.message}</p>`;
+                resultadoDiv.innerHTML = `<p style="color:red;"><strong>Erro!</strong> Não foi possível gerar a lista. Detalhes: ${error.message}</p>`;
             }
         }
     </script>
