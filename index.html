@@ -12,7 +12,8 @@
         th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
         th { background-color: #f8f9fa; font-weight: 600; }
         tr:nth-child(even) { background-color: #f8f9fa; }
-        #resultado p { font-size: 16px; }
+        #resultado p { font-size: 16px; text-align: left; white-space: pre-wrap; word-wrap: break-word; }
+        .error-box { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; padding: 15px; border-radius: 4px; text-align: left; }
     </style>
 </head>
 <body>
@@ -32,9 +33,22 @@
             
             try {
                 const response = await fetch('/api/process');
+                
+                // --- LÓGICA DE DIAGNÓSTICO MELHORADA ---
                 if (!response.ok) {
-                    throw new Error(`Ocorreu um erro no servidor: ${response.statusText}`);
+                    // Tenta ler o corpo da resposta de erro para obter detalhes
+                    const errorData = await response.json();
+                    let errorMessage = `<div class="error-box"><strong>Erro no Servidor</strong><br>`;
+                    if (errorData.details) {
+                        errorMessage += `<strong>Mensagem:</strong> ${errorData.details.error_message}<br><br>`;
+                        errorMessage += `<strong>Rastreamento (Traceback):</strong><br><pre>${errorData.details.traceback}</pre></div>`;
+                    } else {
+                        errorMessage += `Ocorreu um erro, mas não foi possível obter detalhes. Status: ${response.statusText}</div>`;
+                    }
+                    resultadoDiv.innerHTML = errorMessage;
+                    return;
                 }
+                
                 const data = await response.json();
 
                 if (data.length === 0) {
@@ -50,7 +64,7 @@
                 resultadoDiv.innerHTML = tableHTML;
                 
             } catch (error) {
-                resultadoDiv.innerHTML = `<p style="color:red;"><strong>Erro!</strong> Não foi possível gerar a lista. Detalhes: ${error.message}</p>`;
+                resultadoDiv.innerHTML = `<div class="error-box"><strong>Erro de Conexão!</strong><br>Não foi possível comunicar com o servidor. Verifique sua conexão ou o status do serviço.<br>Detalhes: ${error.message}</div>`;
             }
         }
     </script>
