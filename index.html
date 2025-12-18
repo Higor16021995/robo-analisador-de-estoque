@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Analisador de Estoque Mágico</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f0f0; text-align: center; padding-top: 50px; }
+        button { font-size: 20px; padding: 15px 30px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        pre { background: #fff; text-align: left; display: inline-block; padding: 20px; border: 1px solid #ccc; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>Robô Analisador de Estoque</h1>
+    <p>Clique no botão para pedir ao robô para fazer os cálculos mágicos!</p>
+    <button onclick="chamarORobo()">Analisar Agora!</button>
+    <div id="resultado">
+        <p>O resultado aparecerá aqui...</p>
+    </div>
+
+    <script>
+        async function chamarORobo() {
+            const resultadoDiv = document.getElementById('resultado');
+            resultadoDiv.innerHTML = '<p>O robô está pensando... Aguarde!</p>';
+            
+            try {
+                const response = await fetch('/api/process');
+                if (!response.ok) {
+                    throw new Error(`O robô respondeu com um erro: ${response.statusText}`);
+                }
+                const data = await response.json();
+                resultadoDiv.innerHTML = '<h2>O Robô Terminou!</h2><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                resultadoDiv.innerHTML = `<p style="color:red;"><strong>Erro!</strong> Não consegui falar com o robô. Detalhes: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
