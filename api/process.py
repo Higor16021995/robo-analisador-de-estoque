@@ -7,7 +7,7 @@ app = Flask(__name__)
 @app.route('/api/process', methods=['GET'])
 def process_handler():
     try:
-        # ETAPA 0: DADOS COMPLETOS E EMBUTIDOS. A CAUSA DE TODOS OS ERROS FOI ELIMINADA.
+        # ETAPA 0: DADOS COMPLETOS E EMBUTIDOS. O UNIVERSO COMPLETO DE PRODUTOS AGORA FAZ PARTE DO CÓDIGO.
         embedded_data = [
             {"codigo": "A", "produto": "BALA FREEGELLS SABORES 120UN", "estoque_atual": -445, "qtd_venda": 506},
             {"codigo": "A", "produto": "CIGARRO PALHEIRO PAULISTINHA PICADO", "estoque_atual": 24, "qtd_venda": 257},
@@ -42,27 +42,29 @@ def process_handler():
             {"codigo": "A", "produto": "CIGARRO DUNHIL VERMELHO", "estoque_atual": 40, "qtd_venda": 55},
             {"codigo": "A", "produto": "CIGARRO LUCKY STRIKE VERMELHO", "estoque_atual": 130, "qtd_venda": 55},
             {"codigo": "A", "produto": "PIPOCA DOCE 15G", "estoque_atual": 0, "qtd_venda": 54},
-            {"codigo": "A", "produto": "CIGARRO EIGHT MACO", "estoque_atual": 70, "qtd_venda": 53}
-        ]
-        
-        df = pd.DataFrame(embedded_data)
-
-        df['estoque_atual'] = pd.to_numeric(df['estoque_atual'], errors='coerce').fillna(0)
-        df['qtd_venda'] = pd.to_numeric(df['qtd_venda'], errors='coerce').fillna(0)
-        df = df[df['estoque_atual'] >= 0].copy()
-
-        df['vdm'] = df['qtd_venda'] / 17
-        df['estoque_alvo'] = df['vdm'] * 12
-        df['estoque_alvo'] = df['estoque_alvo'].apply(np.ceil)
-        df['quantidade_a_comprar'] = df['estoque_alvo'] - df['estoque_atual']
-        df['quantidade_a_comprar'] = df['quantidade_a_comprar'].clip(lower=0).astype(int)
-
-        lista_de_compras = df[df['quantidade_a_comprar'] > 0]
-        
-        resultado = lista_de_compras[['codigo', 'produto', 'quantidade_a_comprar']].sort_values(
-            by='quantidade_a_comprar', ascending=False
-        ).to_dict(orient='records')
-        
-        return jsonify(resultado)
-    except Exception as e:
-        return jsonify({"error": "Falha crítica de lógica interna.", "details": str(e)}), 500
+            {"codigo": "A", "produto": "CIGARRO EIGHT MACO", "estoque_atual": 70, "qtd_venda": 53},
+            {"codigo": "A", "produto": "CIGARRO PALHEIRO SOUZA PAIOL PICADO", "estoque_atual": 137, "qtd_venda": 52},
+            {"codigo": "A", "produto": "SALGAMINHO 40G", "estoque_atual": -12, "qtd_venda": 52},
+            {"codigo": "A", "produto": "DOCE PE DE MOLEQUE 50UN (GRILAO)", "estoque_atual": 16, "qtd_venda": 51},
+            {"codigo": "A", "produto": "CIGARRO ROTHMANS AZUL", "estoque_atual": 60, "qtd_venda": 51},
+            {"codigo": "A", "produto": "ENERGETICO MONSTER", "estoque_atual": 64, "qtd_venda": 51},
+            {"codigo": "A", "produto": "CIGARRO LUCKY STRIKE 2 BOLAS", "estoque_atual": "22,25", "qtd_venda": 49},
+            {"codigo": "B", "produto": "HALLS", "estoque_atual": 111, "qtd_venda": 48},
+            {"codigo": "B", "produto": "REFRI GUARANA 2L", "estoque_atual": 11, "qtd_venda": 47},
+            {"codigo": "B", "produto": "CERVEJA BUDWEISER 350ML", "estoque_atual": 36, "qtd_venda": 46},
+            {"codigo": "B", "produto": "CIGARRO GUDAN", "estoque_atual": 30, "qtd_venda": 46},
+            {"codigo": "B", "produto": "TRIDENT", "estoque_atual": 150, "qtd_venda": 46},
+            {"codigo": "B", "produto": "SALGADINHO SABORES", "estoque_atual": 0, "qtd_venda": 45},
+            {"codigo": "B", "produto": "CIGARRO PALHEIRO JACK PAIOLS PICADO", "estoque_atual": 89, "qtd_venda": 42},
+            {"codigo": "B", "produto": "CERVEJA BRAHMA DUPLO MALTE 350ML (AMBEV)", "estoque_atual": 7, "qtd_venda": 40},
+            {"codigo": "B", "produto": "CARVAO 3 KG", "estoque_atual": 48, "qtd_venda": 40},
+            {"codigo": "B", "produto": "PAO DE ALHO", "estoque_atual": 50, "qtd_venda": 40},
+            {"codigo": "B", "produto": "CIGARRO GIFT MACO", "estoque_atual": 150, "qtd_venda": 39},
+            {"codigo": "B", "produto": "PIRULITO BIG BIG", "estoque_atual": -18, "qtd_venda": 39},
+            {"codigo": "B", "produto": "CIGARRO LUCKY STRIKE AZUL", "estoque_atual": 50, "qtd_venda": 38},
+            {"codigo": "B", "produto": "CHOCOLATE LAKA", "estoque_atual": 14, "qtd_venda": 37},
+            {"codigo": "B", "produto": "CIGARRO ROTHMANS CINZA", "estoque_atual": 20, "qtd_venda": 36},
+            {"codigo": "B", "produto": "SUCO KAPO", "estoque_atual": 33, "qtd_venda": 36},
+            {"codigo": "B", "produto": "AGUA DE COCO", "estoque_atual": 61, "qtd_venda": 35},
+            {"codigo": "B", "produto": "CIGARRO DUNHIL PRATA", "estoque_atual": 50, "qtd_venda": 35},
+            {"codigo": "B", "produto": "VODKA KISLLA",](streamdown:incomplete-link)
